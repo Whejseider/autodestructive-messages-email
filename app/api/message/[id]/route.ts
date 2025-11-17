@@ -1,55 +1,38 @@
-import { promises as fs } from 'fs';
-import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
-
-const messagesFilePath = path.join(process.cwd(), 'data', 'messages.json');
-
-async function readMessages() {
-  try {
-    const data = await fs.readFile(messagesFilePath, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    return {};
+import { NextResponse } from "next/server";
+import { messageService } from "@/services/message.service";
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { password } = await req.json().catch(() => ({}));
+  const result = await messageService.readMessage(id, password);
+  
+  switch (result.status) {
+    case "not-found":
+      return new NextResponse("not-found", { status: 404 });
+    case "requires-password":
+      return new NextResponse("requires-password", { status: 401 });
+    case "wrong-password":
+      return new NextResponse("wrong-password", { status: 401 });
+    case "success":
+      return NextResponse.json({
+        title: result.title,
+        content: result.content,
+      });
   }
 }
 
-async function writeMessages(messages: any) {
-  await fs.writeFile(messagesFilePath, JSON.stringify(messages, null, 2));
-}
-
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const messages = await readMessages();
-  const message = messages[params.id];
-
-  if (!message) {
-    return new NextResponse('Message not found', { status: 404 });
+export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const result = await messageService.readMessage(id);
+  
+  switch (result.status) {
+    case "not-found":
+      return new NextResponse("not-found", { status: 404 });
+    case "requires-password":
+      return new NextResponse("requires-password", { status: 401 });
+    case "success":
+      return NextResponse.json({
+        title: result.title,
+        content: result.content,
+      });
   }
-
-  if (message.password) {
-    return NextResponse.json({ password: true });
-  }
-
-  delete messages[params.id];
-  await writeMessages(messages);
-
-  return NextResponse.json(message);
-}
-
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const { password } = await req.json();
-  const messages = await readMessages();
-  const message = messages[params.id];
-
-  if (!message) {
-    return new NextResponse('Message not found', { status: 404 });
-  }
-
-  if (message.password !== password) {
-    return new NextResponse('Incorrect password', { status: 401 });
-  }
-
-  delete messages[params.id];
-  await writeMessages(messages);
-
-  return NextResponse.json(message);
 }
