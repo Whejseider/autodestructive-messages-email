@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+const inputStyles =
+  "w-full rounded border border-gray-300 bg-gray-50 px-3 py-2 text-black shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:border-gray-700 dark:bg-gray-900 dark:text-white";
+
 export default function PasswordForm({ id }: { id: string }) {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -30,12 +33,7 @@ export default function PasswordForm({ id }: { id: string }) {
                 setLoading(false);
                 return;
             }
-            /*if (!res.ok) {
-                setError("Error inesperado.");
-                setLoading(false);
-                return;
-            }
-            */
+
             const data = await res.json();
             setMessage(data);
         } catch {
@@ -59,7 +57,7 @@ export default function PasswordForm({ id }: { id: string }) {
         <div className="space-y-3">
             <input
                 type="password"
-                className="border px-2 py-1 rounded w-full"
+                className={inputStyles}
                 placeholder="Ingrese contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -70,7 +68,7 @@ export default function PasswordForm({ id }: { id: string }) {
             <button
                 onClick={verify}
                 disabled={loading}
-                className="bg-black text-white px-4 py-2 rounded w-full"
+                className="w-full rounded bg-blue-600 px-4 py-2 text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50"
             >
                 {loading ? "Verificando..." : "Ver mensaje"}
             </button>

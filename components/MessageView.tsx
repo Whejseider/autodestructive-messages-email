@@ -12,7 +12,6 @@ export default async function MessageView({ id }: { id: string }) {
     );
   }
 
-  // If it has password → ask for password
   if (msg.passwordHash) {
     return (
       <div className="max-w-sm space-y-4">
@@ -25,7 +24,6 @@ export default async function MessageView({ id }: { id: string }) {
     );
   }
 
-  // If message has no password → auto-read + destroy
   await messageRepository.deleteById(id);
 
   return (
