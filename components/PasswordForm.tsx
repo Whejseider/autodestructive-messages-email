@@ -15,9 +15,11 @@ export default function PasswordForm({ id }: { id: string }) {
         try {
             const res = await fetch(`/api/message/${id}`, {
                 method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
                 body: JSON.stringify({ password }),
             });
-
             if (res.status === 401) {
                 setError("Contraseña incorrecta.");
                 setLoading(false);
