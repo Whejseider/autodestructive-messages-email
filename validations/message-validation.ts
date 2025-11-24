@@ -5,7 +5,7 @@ export const messageSchema = Yup.object().shape({
         .required("Complete este campo")
         .max(50, "El título no puede tener más de 50 caracteres"),
 
-    message: Yup.string()
+    content: Yup.string()
         .required("El mensaje es obligatorio")
         .min(1, "El mensaje debe tener al menos 1 carácter")
         .max(256, "El mensaje no puede tener más de 256 caracteres"),
@@ -19,6 +19,6 @@ export const messageSchema = Yup.object().shape({
 
 export interface FormValues {
     title: string;
-    message: string;
+    content: string;
     password?: string;
 }

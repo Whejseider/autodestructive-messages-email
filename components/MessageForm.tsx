@@ -18,7 +18,7 @@ export default function MessageForm() {
 
     const initialValues: FormValues = {
         title: "",
-        message: "",
+        content: "",
         password: "",
     };
 
@@ -123,21 +123,21 @@ export default function MessageForm() {
                         )}
                     </Field>
 
-                    <Field name="message">
+                    <Field name="content">
                         {({field, form}: any) => (
                             <Textarea
                                 {...field}
                                 isClearable
-                                onClear={() => form.setFieldValue('message', '')}
+                                onClear={() => form.setFieldValue('content', '')}
                                 isRequired
                                 label="Mensaje"
                                 placeholder="Escribe tu mensaje secreto..."
                                 variant="flat"
                                 labelPlacement="outside"
                                 minRows={4}
-                                isInvalid={!!(errors.message && touched.message)}
+                                isInvalid={!!(errors.content && touched.content)}
                                 errorMessage={
-                                    errors.message && touched.message ? errors.message : ""
+                                    errors.content && touched.content ? errors.content : ""
                                 }
                                 startContent={
                                     <Mail className="text-2xl text-default-400 pointer-events-none shrink-0" />
