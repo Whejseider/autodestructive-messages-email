@@ -162,7 +162,7 @@ export default function MessageForm() {
                                 endContent={
                                     <button
                                         aria-label="toggle password visibility"
-                                        className="focus:outline-solid outline-transparent"
+                                        className="focus:outline-solid outline-transparent cursor-pointer"
                                         type="button"
                                         onClick={toggleVisibility}
                                     >

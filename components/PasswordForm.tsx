@@ -1,18 +1,30 @@
 "use client";
 
 import { useState } from "react";
-
-const inputStyles =
-  "w-full rounded border border-gray-300 bg-gray-50 px-3 py-2 text-black shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:border-gray-700 dark:bg-gray-900 dark:text-white";
+import { Formik, Form, Field, FormikHelpers } from "formik";
+import * as Yup from "yup";
+import { Input } from "@heroui/input";
+import { Button } from "@heroui/button";
+import { Card, CardBody, CardFooter, CardHeader } from "@heroui/card";
+import { Divider } from "@heroui/divider";
+import {Eye, EyeOff, ShieldCheck, Shredder} from "lucide-react";
+import {PasswordFormValues, passwordSchema} from "@/validations/password-validation";
 
 export default function PasswordForm({ id }: { id: string }) {
-    const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [message, setMessage] = useState<{ title: string; content: string } | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
 
-    async function verify() {
-        setLoading(true);
+    const toggleVisibility = () => setIsVisible(!isVisible);
+
+    const initialValues: PasswordFormValues = {
+        password: "",
+    };
+
+    const handleSubmit = async (
+        values: PasswordFormValues,
+        { setSubmitting }: FormikHelpers<PasswordFormValues>
+    ) => {
         setError("");
 
         try {
@@ -21,57 +33,118 @@ export default function PasswordForm({ id }: { id: string }) {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ password }),
+                body: JSON.stringify({ password: values.password }),
             });
+
             if (res.status === 401) {
-                setError("Contraseña incorrecta.");
-                setLoading(false);
+                setError("Contraseña incorrecta");
+                setSubmitting(false);
                 return;
             }
-            if (res.status === 404) {//innecesario
-                setError("El mensaje no se encontró.");
-                setLoading(false);
+
+            if (!res.ok) {
+                setError("Error al obtener el mensaje");
+                setSubmitting(false);
                 return;
             }
 
             const data = await res.json();
             setMessage(data);
         } catch {
-            setError("Error de conexión.");
+            setError("Error de conexión");
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
-    }
+    };
 
     if (message) {
         return (
-            <div className="border p-4 rounded max-w-xl mx-auto">
-                <h1 className="text-xl font-bold mb-2">{message.title}</h1>
-                <p>{message.content}</p>
-                <p className="mt-4 text-sm text-gray-600">⚠️ Este mensaje ya fue destruido.</p>
-            </div>
+            <Card className="max-w-md">
+                <CardHeader className="flex gap-3">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-success/10">
+                        <ShieldCheck className="w-6 h-6 text-success" />
+                    </div>
+                    <div className="flex flex-col">
+                        <p className="text-xl font-bold">{message.title}</p>
+                        <p className="text-small text-default-500">Mensaje secreto</p>
+                    </div>
+                </CardHeader>
+                <Divider />
+                <CardBody className="py-6">
+                    <p className="text-lg whitespace-pre-wrap">{message.content}</p>
+                </CardBody>
+                <Divider />
+                <CardFooter className="bg-danger/5">
+                    <div className="flex items-center gap-2 text-danger">
+                        <Shredder className="w-5 h-5" />
+                        <p className="text-sm font-medium">
+                            Este mensaje se ha autodestruido y no puede ser recuperado
+                        </p>
+                    </div>
+                </CardFooter>
+            </Card>
         );
     }
 
     return (
-        <div className="space-y-3">
-            <input
-                type="password"
-                className={inputStyles}
-                placeholder="Ingrese contraseña"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-            />
+        <Formik<PasswordFormValues>
+            initialValues={initialValues}
+            validationSchema={passwordSchema}
+            onSubmit={handleSubmit}
+        >
+            {({ isSubmitting, errors, touched, submitForm }) => (
+                <Form className="w-full flex flex-col gap-4">
+                    {error && (
+                        <div className="p-3 bg-danger/10 border border-danger text-danger rounded-medium text-sm">
+                            {error}
+                        </div>
+                    )}
 
-            {error && <p className="text-red-600 text-sm">{error}</p>}
+                    <Field name="password">
+                        {({ field }: any) => (
+                            <Input
+                                {...field}
+                                type={isVisible ? "text" : "password"}
+                                label="Contraseña"
+                                placeholder="Ingresa la contraseña"
+                                variant="flat"
+                                labelPlacement="outside"
+                                isRequired
+                                isInvalid={!!(touched.password && errors.password)}
+                                errorMessage={touched.password && errors.password}
+                                endContent={
+                                    <button
+                                        aria-label="toggle password visibility"
+                                        className="focus:outline-none cursor-pointer"
+                                        type="button"
+                                        onClick={toggleVisibility}
+                                    >
+                                        {isVisible ? (
+                                            <EyeOff className="w-5 h-5 text-default-400 pointer-events-none" />
+                                        ) : (
+                                            <Eye className="w-5 h-5 text-default-400 pointer-events-none" />
+                                        )}
+                                    </button>
+                                }
+                            />
+                        )}
+                    </Field>
 
-            <button
-                onClick={verify}
-                disabled={loading}
-                className="w-full rounded bg-blue-600 px-4 py-2 text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50"
-            >
-                {loading ? "Verificando..." : "Ver mensaje"}
-            </button>
-        </div>
+                    <Button
+                        type="button"
+                        onPress={submitForm}
+                        isDisabled={isSubmitting}
+                        isLoading={isSubmitting}
+                        color="primary"
+                        variant="shadow"
+                        size="lg"
+                        className="font-semibold"
+                        fullWidth
+                    >
+                        Ver mensaje
+                    </Button>
+                </Form>
+            )}
+        </Formik>
     );
 }
