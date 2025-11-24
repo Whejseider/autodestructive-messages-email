@@ -1,135 +1,176 @@
 "use client";
 
-import { useState } from "react";
-
-const inputStyles =
-  "w-full rounded border border-gray-300 bg-gray-50 px-3 py-2 text-black shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:border-gray-700 dark:bg-gray-900 dark:text-white";
+import {useState} from "react";
+import {Field, Form, Formik, FormikHelpers} from "formik";
+import {FormValues, messageSchema} from "@/validations/message-validation";
+import {Button} from "@heroui/button";
+import {Input, Textarea} from "@heroui/input";
+import {Chip} from "@heroui/chip";
 
 export default function MessageForm() {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [createdId, setCreatedId] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
+    const [createdId, setCreatedId] = useState<string | null>(null);
+    const [generalError, setGeneralError] = useState("");
+    const [copied, setCopied] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-
-    if (!title.trim()) {
-      setError("El título no puede estar vacío.");
-      return;
-    }
-
-    if (!content.trim() || content.length > 256) {
-      setError("El mensaje debe tener entre 1 y 256 caracteres.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/message/post", {
-        method: "POST",
-        body: JSON.stringify({ title, content, password }),
-      });
-
-      if (!res.ok) {
-        throw new Error(await res.text());
-      }
-
-      const data = await res.json();
-      setCreatedId(data.id);
-    } catch (err: any) {
-      setError(err.message || "Error creando el mensaje");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (createdId) {
-    const shareableUrl = `${
-      typeof window !== "undefined" ? window.location.origin : ""
-    }/message/${createdId}`;
-
-    const handleCopy = () => {
-      navigator.clipboard.writeText(shareableUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500); // Resetea el botón después de 2.5s
+    const initialValues: FormValues = {
+        title: "",
+        message: "",
+        password: "",
     };
 
+    const handleSubmit = async (
+        values: FormValues,
+        {setSubmitting, resetForm}: FormikHelpers<FormValues>
+    ) => {
+        setGeneralError("");
+
+        try {
+            const res = await fetch("/api/message/post", {
+                method: "POST",
+                body: JSON.stringify(values),
+            });
+
+            if (!res.ok) {
+                throw new Error(await res.text());
+            }
+
+            const data = await res.json();
+            setCreatedId(data.id);
+            resetForm();
+        } catch (err: any) {
+            setGeneralError(err.message || "Error creando el mensaje");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    if (createdId) {
+        const shareableUrl = `${
+            typeof window !== "undefined" ? window.location.origin : ""
+        }/message/${createdId}`;
+
+        const handleCopy = () => {
+            navigator.clipboard.writeText(shareableUrl);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2500);
+        };
+
+        return (
+            <div className="w-full max-w-xl space-y-4 text-center">
+                <h2 className="text-2xl font-bold">¡Mensaje Creado!</h2>
+                <p className="text-default-500">
+                    Comparte este enlace. Solo podrá verse una vez.
+                </p>
+
+                <div className="flex gap-2">
+                    <Input
+                        type="text"
+                        value={shareableUrl}
+                        readOnly
+                        variant="flat"
+                    />
+                    <Button
+                        onPress={handleCopy}
+                        color="default"
+                        variant="flat"
+                    >
+                        {copied ? "¡Copiado!" : "Copiar"}
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     return (
-      <div className="w-full max-w-xl space-y-4 text-center">
-        <h2 className="text-2xl font-bold">¡Mensaje Creado!</h2>
-        <p className="text-gray-600 dark:text-gray-400">
-          Comparte este enlace. Solo podrá verse una vez.
-        </p>
+        <Formik<FormValues>
+            initialValues={initialValues}
+            validationSchema={messageSchema}
+            onSubmit={handleSubmit}
+        >
+            {({isSubmitting, errors, touched, submitForm}) => (
+                <Form className="w-full max-w-md flex flex-col gap-6">
 
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={shareableUrl}
-            readOnly
-            className={inputStyles} // Reutilizamos el estilo del input
-          />
-          <button
-            onClick={handleCopy}
-            className="rounded bg-gray-600 px-4 py-2 text-white shadow-sm transition-colors hover:bg-gray-700 dark:bg-gray-300 dark:text-black dark:hover:bg-gray-400"
-          >
-            {copied ? "¡Copiado!" : "Copiar"}
-          </button>
-        </div>
-      </div>
+                    {generalError && (
+                        <div className="p-4 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 text-danger-700 dark:text-danger-500 rounded-lg">
+                            {generalError}
+                        </div>
+                    )}
+
+                    <h2 className="text-2xl font-bold">
+                        Mensaje Autodestructivo
+                    </h2>
+
+                    <Field name="title">
+                        {({field}: any) => (
+                            <Input
+                                {...field}
+                                isRequired
+                                type="text"
+                                label="Título"
+                                variant="flat"
+                                labelPlacement="outside"
+                                placeholder="Escribe el título del mensaje"
+                                isInvalid={!!(touched.title && errors.title)}
+                                errorMessage={touched.title && errors.title}
+                            />
+                        )}
+                    </Field>
+
+                    <Field name="message">
+                        {({field}: any) => (
+                            <Textarea
+                                {...field}
+                                isRequired
+                                label="Mensaje"
+                                placeholder="Escribe tu mensaje secreto..."
+                                variant="flat"
+                                labelPlacement="outside"
+                                minRows={4}
+                                isInvalid={!!(errors.message && touched.message)}
+                                errorMessage={
+                                    errors.message && touched.message ? errors.message : ""
+                                }
+                            />
+                        )}
+                    </Field>
+
+                    <Field name="password">
+                        {({field}: any) => (
+                            <Input
+                                {...field}
+                                type="password"
+                                label="Contraseña"
+                                placeholder="Para desencriptar"
+                                variant="flat"
+                                labelPlacement="outside"
+                                isInvalid={!!(errors.password && touched.password)}
+                                errorMessage={
+                                    errors.password && touched.password ? errors.password : ""
+                                }
+                                endContent={
+                                    <Chip size="sm" variant="flat" color="default">
+                                        Opcional
+                                    </Chip>
+                                }
+                            />
+                        )}
+                    </Field>
+
+                    <Button
+                        type="button"
+                        onPress={submitForm}
+                        isDisabled={isSubmitting}
+                        isLoading={isSubmitting}
+                        color="primary"
+                        variant="shadow"
+                        size="lg"
+                        className="font-semibold"
+                        fullWidth
+                    >
+                        Crear mensaje
+                    </Button>
+                </Form>
+            )}
+        </Formik>
     );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
-      {error && <p className="text-red-600">{error}</p>}
-
-      <div>
-        <label className="block font-semibold mb-1">Título</label>
-        <input
-          className={inputStyles}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block font-semibold mb-1">
-          Mensaje (máx. 256 caracteres)
-        </label>
-        <textarea
-          className={inputStyles}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          maxLength={256}
-          rows={4}
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block font-semibold mb-1">Contraseña (opcional)</label>
-        <input
-          type="password"
-          className={inputStyles}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded bg-blue-600 px-4 py-2 text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? "Creando..." : "Crear mensaje"}
-      </button>
-    </form>
-  );
 }
