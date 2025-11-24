@@ -5,14 +5,19 @@ import {Field, Form, Formik, FormikHelpers} from "formik";
 import {FormValues, messageSchema} from "@/validations/message-validation";
 import {Button} from "@heroui/button";
 import {Input, Textarea} from "@heroui/input";
-import {Chip} from "@heroui/chip";
-import {Eye, EyeOff, Mail} from "lucide-react";
+import {Check, Copy, Eye, EyeOff, Mail, Send} from "lucide-react";
+import {useDisclosure} from "@heroui/use-disclosure";
+import {Modal, ModalBody, ModalContent, ModalFooter, ModalHeader} from "@heroui/modal";
+import {EmailFormValues, emailSchema} from "@/validations/email-validation";
 
 export default function MessageForm() {
     const [createdId, setCreatedId] = useState<string | null>(null);
+    const [createdTitle, setCreatedTitle] = useState<string>("");
     const [generalError, setGeneralError] = useState("");
     const [copied, setCopied] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
+    const {isOpen, onOpen, onClose} = useDisclosure();
+    const [shareStatus, setShareStatus] = useState<{ success: boolean; message: string } | null>(null);
 
     const toggleVisibility = () => setIsVisible(!isVisible);
 
@@ -20,6 +25,54 @@ export default function MessageForm() {
         title: "",
         content: "",
         password: "",
+    };
+
+    const emailInitialValues: EmailFormValues = {
+        email: "",
+    };
+
+    const handleShareByEmail = async (
+        values: EmailFormValues,
+        {setSubmitting, resetForm}: FormikHelpers<EmailFormValues>
+    ) => {
+        if (!createdId) return;
+
+        setShareStatus(null);
+
+        try {
+            const response = await fetch('/api/share', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    messageId: createdId,
+                    email: values.email,
+                    title: createdTitle
+                }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                setShareStatus({
+                    success: true,
+                    message: "¡Enlace enviado con éxito!"
+                });
+                resetForm();
+                setTimeout(() => {
+                    onClose();
+                    setShareStatus(null);
+                }, 2000);
+            } else {
+                throw new Error(result.error || 'Error al enviar el correo');
+            }
+        } catch (error: any) {
+            setShareStatus({
+                success: false,
+                message: error.message || "Error al enviar el correo"
+            });
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const handleSubmit = async (
@@ -40,6 +93,7 @@ export default function MessageForm() {
 
             const data = await res.json();
             setCreatedId(data.id);
+            setCreatedTitle(values.title);
             resetForm();
         } catch (err: any) {
             setGeneralError(err.message || "Error creando el mensaje");
@@ -59,28 +113,125 @@ export default function MessageForm() {
             setTimeout(() => setCopied(false), 2500);
         };
 
-        return (
-            <div className="w-full max-w-xl space-y-4 text-center">
-                <h2 className="text-2xl font-bold">¡Mensaje Creado!</h2>
-                <p className="text-default-500">
-                    Comparte este enlace. Solo podrá verse una vez.
-                </p>
+        const handleCloseModal = () => {
+            onClose();
+            setShareStatus(null);
+        };
 
-                <div className="flex gap-2">
-                    <Input
-                        type="text"
-                        value={shareableUrl}
-                        readOnly
-                        variant="flat"
-                    />
+        return (
+            <div className="w-full max-w-xl space-y-6">
+                <div className="text-center space-y-2">
+                    <h2 className="text-2xl font-bold">¡Mensaje Creado!</h2>
+                    <p className="text-default-500">
+                        Comparte este enlace. Solo podrá verse una vez.
+                    </p>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                    <div className="flex gap-2">
+                        <Input
+                            type="text"
+                            value={shareableUrl}
+                            readOnly
+                            variant="bordered"
+                            classNames={{
+                                inputWrapper: "flex-1"
+                            }}
+                        />
+                        <Button
+                            onPress={handleCopy}
+                            variant="flat"
+                            color={copied ? "success" : "default"}
+                            isIconOnly
+                            aria-label="Copiar enlace"
+                        >
+                            {copied ? <Check className="w-4 h-4"/> : <Copy className="w-4 h-4"/>}
+                        </Button>
+                    </div>
+
                     <Button
-                        onPress={handleCopy}
-                        color="default"
+                        onPress={onOpen}
+                        color="primary"
                         variant="flat"
+                        startContent={<Mail className="w-4 h-4"/>}
+                        fullWidth
                     >
-                        {copied ? "¡Copiado!" : "Copiar"}
+                        Enviar por correo
                     </Button>
                 </div>
+
+                <Modal isOpen={isOpen} onClose={handleCloseModal} placement="center">
+                    <ModalContent>
+                        <ModalHeader className="flex flex-col gap-1">
+                            <h3 className="text-xl font-bold">Enviar por correo</h3>
+                            <p className="text-sm text-default-500 font-normal">
+                                Envía el enlace del mensaje a un destinatario
+                            </p>
+                        </ModalHeader>
+
+                        <Formik<EmailFormValues>
+                            initialValues={emailInitialValues}
+                            validationSchema={emailSchema}
+                            onSubmit={handleShareByEmail}
+                        >
+                            {({isSubmitting, errors, touched, submitForm}) => (
+                                <Form>
+                                    <ModalBody>
+                                        <Field name="email">
+                                            {({field}: any) => (
+                                                <Input
+                                                    {...field}
+                                                    type="email"
+                                                    label="Correo electrónico"
+                                                    placeholder="ejemplo@dominio.com"
+                                                    variant="bordered"
+                                                    labelPlacement="outside"
+                                                    isRequired
+                                                    isInvalid={!!(touched.email && errors.email)}
+                                                    errorMessage={touched.email && errors.email}
+                                                    startContent={
+                                                        <Mail className="w-4 h-4 text-default-400"/>
+                                                    }
+                                                />
+                                            )}
+                                        </Field>
+
+                                        {shareStatus && (
+                                            <div
+                                                className={`p-3 rounded-medium ${
+                                                    shareStatus.success
+                                                        ? 'bg-success/10 border border-success text-success'
+                                                        : 'bg-danger/10 border border-danger text-danger'
+                                                }`}
+                                            >
+                                                <p className="text-sm font-medium">{shareStatus.message}</p>
+                                            </div>
+                                        )}
+                                    </ModalBody>
+
+                                    <ModalFooter>
+                                        <Button
+                                            variant="flat"
+                                            onPress={handleCloseModal}
+                                            isDisabled={isSubmitting}
+                                        >
+                                            Cancelar
+                                        </Button>
+                                        <Button
+                                            color="primary"
+                                            onPress={submitForm}
+                                            isLoading={isSubmitting}
+                                            isDisabled={isSubmitting}
+                                            startContent={!isSubmitting && <Send className="w-4 h-4"/>}
+                                        >
+                                            Enviar
+                                        </Button>
+                                    </ModalFooter>
+                                </Form>
+                            )}
+                        </Formik>
+                    </ModalContent>
+                </Modal>
             </div>
         );
     }
@@ -114,7 +265,7 @@ export default function MessageForm() {
                                 isRequired
                                 type="text"
                                 label="Título"
-                                variant="flat"
+                                variant="bordered"
                                 labelPlacement="outside"
                                 placeholder="Escribe el título del mensaje"
                                 isInvalid={!!(touched.title && errors.title)}
@@ -132,15 +283,12 @@ export default function MessageForm() {
                                 isRequired
                                 label="Mensaje"
                                 placeholder="Escribe tu mensaje secreto..."
-                                variant="flat"
+                                variant="bordered"
                                 labelPlacement="outside"
                                 minRows={4}
                                 isInvalid={!!(errors.content && touched.content)}
                                 errorMessage={
                                     errors.content && touched.content ? errors.content : ""
-                                }
-                                startContent={
-                                    <Mail className="text-2xl text-default-400 pointer-events-none shrink-0" />
                                 }
                             />
                         )}
@@ -153,7 +301,7 @@ export default function MessageForm() {
                                 type={isVisible ? "text" : "password"}
                                 label="Contraseña (opcional)"
                                 placeholder="Para desencriptar"
-                                variant="flat"
+                                variant="bordered"
                                 labelPlacement="outside"
                                 isInvalid={!!(errors.password && touched.password)}
                                 errorMessage={
@@ -162,14 +310,14 @@ export default function MessageForm() {
                                 endContent={
                                     <button
                                         aria-label="toggle password visibility"
-                                        className="focus:outline-solid outline-transparent cursor-pointer"
+                                        className="focus:outline-none cursor-pointer"
                                         type="button"
                                         onClick={toggleVisibility}
                                     >
                                         {isVisible ? (
-                                            <EyeOff className="text-2xl text-default-400 pointer-events-none"/>
+                                            <EyeOff className="w-5 h-5 text-default-400 pointer-events-none"/>
                                         ) : (
-                                            <Eye className="text-2xl text-default-400 pointer-events-none"/>
+                                            <Eye className="w-5 h-5 text-default-400 pointer-events-none"/>
                                         )
                                         }
                                     </button>

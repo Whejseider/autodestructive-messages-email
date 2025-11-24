@@ -1,7 +1,7 @@
-import { messageRepository } from "@/repository/repository";
-import { StoredMessage } from "@/utils/types";
-import { hashPassword, verifyPassword } from "@/utils/hash";
-import { v4 as uuid } from "uuid";
+import {messageRepository} from "@/repository/repository";
+import {StoredMessage} from "@/utils/types";
+import {hashPassword, verifyPassword} from "@/utils/hash";
+import {v4 as uuid} from "uuid";
 
 export const messageService = {
   async createMessage(

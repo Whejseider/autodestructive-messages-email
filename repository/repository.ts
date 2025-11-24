@@ -1,6 +1,6 @@
-import { promises as fs } from "fs";
+import {promises as fs} from "fs";
 import path from "path";
-import { StoredMessage } from "@/utils/types";
+import {StoredMessage} from "@/utils/types";
 
 const filePath = path.join(process.cwd(), "data/messages.json");
 

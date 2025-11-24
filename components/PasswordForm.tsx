@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Formik, Form, Field, FormikHelpers } from "formik";
-import * as Yup from "yup";
-import { Input } from "@heroui/input";
-import { Button } from "@heroui/button";
-import { Card, CardBody, CardFooter, CardHeader } from "@heroui/card";
-import { Divider } from "@heroui/divider";
-import {Eye, EyeOff, ShieldCheck, Shredder} from "lucide-react";
+import {useState} from "react";
+import {Field, Form, Formik, FormikHelpers} from "formik";
+import {Input} from "@heroui/input";
+import {Button} from "@heroui/button";
+import {Eye, EyeOff} from "lucide-react";
 import {PasswordFormValues, passwordSchema} from "@/validations/password-validation";
+import {MessageCard} from "@/components/MessageCard";
 
 export default function PasswordForm({ id }: { id: string }) {
     const [error, setError] = useState("");
@@ -59,30 +57,7 @@ export default function PasswordForm({ id }: { id: string }) {
 
     if (message) {
         return (
-            <Card className="max-w-md">
-                <CardHeader className="flex gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-success/10">
-                        <ShieldCheck className="w-6 h-6 text-success" />
-                    </div>
-                    <div className="flex flex-col">
-                        <p className="text-xl font-bold">{message.title}</p>
-                        <p className="text-small text-default-500">Mensaje secreto</p>
-                    </div>
-                </CardHeader>
-                <Divider />
-                <CardBody className="py-6">
-                    <p className="text-lg whitespace-pre-wrap">{message.content}</p>
-                </CardBody>
-                <Divider />
-                <CardFooter className="bg-danger/5">
-                    <div className="flex items-center gap-2 text-danger">
-                        <Shredder className="w-5 h-5" />
-                        <p className="text-sm font-medium">
-                            Este mensaje se ha autodestruido y no puede ser recuperado
-                        </p>
-                    </div>
-                </CardFooter>
-            </Card>
+            <MessageCard message={message}/>
         );
     }
 
@@ -107,7 +82,7 @@ export default function PasswordForm({ id }: { id: string }) {
                                 type={isVisible ? "text" : "password"}
                                 label="Contraseña"
                                 placeholder="Ingresa la contraseña"
-                                variant="flat"
+                                variant="bordered"
                                 labelPlacement="outside"
                                 isRequired
                                 isInvalid={!!(touched.password && errors.password)}

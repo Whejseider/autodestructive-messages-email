@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
-import { messageService } from "@/services/message.service";
+import {NextResponse} from "next/server";
+import {messageService} from "@/services/message.service";
+
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { password } = await req.json().catch(() => ({}));

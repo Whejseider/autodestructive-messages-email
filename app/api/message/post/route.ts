@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { messageRepository } from "@/repository/repository";
-import { hashPassword } from "@/utils/hash";
-import { randomUUID } from "crypto";
+import {NextResponse} from "next/server";
+import {messageRepository} from "@/repository/repository";
+import {hashPassword} from "@/utils/hash";
+import {randomUUID} from "crypto";
 
 export async function POST(req: Request) {
   try {
