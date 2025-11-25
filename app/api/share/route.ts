@@ -1,7 +1,7 @@
 import {NextResponse} from 'next/server';
 import {emailService} from '@/services/email.service';
 import {messageRepository} from '@/repository/repository';
-import {isValidEmail, isValidMessageId} from "@/utils/validators";
+import {isValidEmail, isValidMessageId, isValidMessageTitle} from "@/utils/validators";
 import {generateEmailHTML} from "@/lib/email-templates";
 
 interface ShareRequest {
@@ -50,7 +50,7 @@ export async function POST(request: Request): Promise<NextResponse<ShareResponse
             );
         }
 
-        if (!isValidEmail(title)) {
+        if (!isValidMessageTitle(title)) {
             return NextResponse.json(
                 {error: 'Título del mensaje requerido'},
                 {status: 400}
